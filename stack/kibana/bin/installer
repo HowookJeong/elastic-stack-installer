@@ -106,6 +106,7 @@ then
   scp -P $sshPort -o StrictHostKeychecking=no $deployFile $sshUser@$sshHost:$distPath
   ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; tar -xvzf $deployFile"
   ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; rm -f $deployFile"
+  ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $deployPath; rm -rf $unzipFolder"
   ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; mv $unzipFolder $deployPath"
   scp -P $sshPort -o StrictHostKeychecking=no start $sshUser@$sshHost:$deployPath/$unzipFolder/bin/
   scp -P $sshPort -o StrictHostKeychecking=no stop $sshUser@$sshHost:$deployPath/$unzipFolder/bin/
@@ -136,6 +137,7 @@ else
   scp -i $sshKey -P $sshPort -o StrictHostKeychecking=no $deployFile $sshUser@$sshHost:$distPath
   ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; tar -xvzf $deployFile"
   ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; rm -f $deployFile"
+  ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $deployPath; rm -rf $unzipFolder"
   ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; mv $unzipFolder $deployPath"
   scp -i $sshKey -P $sshPort -o StrictHostKeychecking=no start $sshUser@$sshHost:$deployPath/$unzipFolder/bin/
   scp -i $sshKey -P $sshPort -o StrictHostKeychecking=no stop $sshUser@$sshHost:$deployPath/$unzipFolder/bin/

@@ -90,6 +90,7 @@ then
   scp -P $sshPort -o StrictHostKeychecking=no $deployFile $sshUser@$sshHost:$distPath
   ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; tar -xvzf $deployFile"
   ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; rm -f $deployFile"
+  ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $deployPath; rm -rf elasticsearch-$version"
   ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; mv elasticsearch-$version $deployPath"
   scp -P $sshPort -o StrictHostKeychecking=no start $sshUser@$sshHost:$deployPath/elasticsearch-$version/bin/
   scp -P $sshPort -o StrictHostKeychecking=no stop $sshUser@$sshHost:$deployPath/elasticsearch-$version/bin/
@@ -120,6 +121,7 @@ else
   scp -i $sshKey -P $sshPort -o StrictHostKeychecking=no $deployFile $sshUser@$sshHost:$distPath
   ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; tar -xvzf $deployFile"
   ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; rm -f $deployFile"
+  ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $deployPath; rm -rf elasticsearch-$version"
   ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; mv elasticsearch-$version $deployPath"
   scp -i $sshKey -P $sshPort -o StrictHostKeychecking=no start $sshUser@$sshHost:$deployPath/elasticsearch-$version/bin/
   scp -i $sshKey -P $sshPort -o StrictHostKeychecking=no stop $sshUser@$sshHost:$deployPath/elasticsearch-$version/bin/
