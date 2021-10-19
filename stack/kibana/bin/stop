@@ -1,0 +1,6 @@
+#!/bin/bash
+
+DIR_NAME=`dirname "$0"`
+DIR_HOME=`cd $DIR_NAME; cd ..; pwd`
+
+pkill -F  $DIR_HOME/PID

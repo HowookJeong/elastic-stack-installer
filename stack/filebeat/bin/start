@@ -1,0 +1,13 @@
+#!/bin/bash
+
+DIR_NAME=`dirname "$0"`
+DIR_HOME=`cd $DIR_NAME; pwd`
+
+if [ -f "$DIR_HOME/PID" ]; then
+  echo "Running Process and Check your Filebeat"
+fi
+
+$DIR_HOME/filebeat > /dev/null 2>&1 & PID=$!
+
+echo $PID
+echo $PID > $DIR_HOME/PID

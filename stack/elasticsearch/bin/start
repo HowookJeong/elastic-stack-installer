@@ -1,0 +1,10 @@
+#!/bin/bash
+
+DIR_NAME=`dirname "$0"`
+DIR_HOME=`cd $DIR_NAME; cd ..; pwd`
+
+if [ -f "$DIR_HOME/PID" ]; then
+  echo "Running Process and Check your Elasticsearch"
+fi
+
+$DIR_HOME/bin/elasticsearch -d -p $DIR_HOME/PID

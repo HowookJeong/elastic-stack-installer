@@ -1,0 +1,140 @@
+#!/bin/zsh
+
+DOWNLOADS=( "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-_VERSION_-darwin-x86_64.tar.gz" "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-_VERSION_-linux-x86_64.tar.gz" "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-_VERSION_-linux-aarch64.tar.gz")
+
+echo "설치 할 운영체제를 선택 하세요."
+echo "0. MACOS"
+echo "1. LINUX_X86_64"
+echo "2. LINUX_AARCH64"
+read choice
+
+echo "선택한 운영 체계는 $choice 번 입니다."
+
+echo "설치 할 버전을 입력 하세요."
+echo "예) 7.15.1"
+read version
+
+echo "입력한 버전은 $version 입니다."
+
+echo ${DOWNLOADS[@]:$choice:$choice}
+
+downloadUrl=`echo ${DOWNLOADS[@]:$choice:1} | sed -e "s/_VERSION_/$version/g"`
+
+echo "VPN 연결을 통해 배포가 이루어 지나요? (y/n)"
+echo "설치 파일을 먼저 다운로드 받습니다. 이후 설치 스크립트를 재실행 하고 이 단계를 'N' 로 입력하고 스킵 합니다."
+read isVpn
+
+echo "wget --read-timeout=5 --timeout=5 --no-check-certificate $downloadUrl"
+wget $downloadUrl
+
+if [[ $isVpn == "y" || $isVpn == "Y" ]]
+then
+  echo "다운로드가 완료 되었습니다.\n다시 실행해 주세요."
+  exit 1
+fi
+
+deployFile=`echo "$downloadUrl" | rev | cut -d '/' -f 1 | rev`
+
+echo "SSH 통신을 위한 KEY 가 필요 한가요? (y/n)"
+read isKey
+
+sshPort=22
+sshKey=""
+if [[ $isKey == "y" || $isKey == "Y" ]]
+then
+  echo "사용할 KEY 파일의 전체 경로와 파일명을 입력 하세요."
+  echo "예)"
+  echo "/Users/henry.force/.ssh/ec2.pem"
+  read sshKey
+
+  echo "입력 하신 KEY 파일은 $sshKey 입니다."
+fi
+
+echo "SSH 접속 User 를 입력 하세요."
+echo "예) deploy"
+read sshUser
+
+echo "설치할 인스턴스의 IP 를 입력 하세요."
+echo "예)"
+echo "127.0.0.1"
+read sshHost
+
+echo "인스턴스에 설치할 경로를 입력 하세요."
+echo "예)"
+echo "/home/deploy/apps/"
+read deployPath
+
+echo "인스턴스에 설치 파일을 배포할 경로를 입력 하세요."
+echo "예)"
+echo "/home/deploy/dist/elastic-stack/elasticsearch"
+read distPath
+
+echo "Symbolic link 를 사용하시면 입력 하시고 아니면 엔터를 입력 하세요."
+read symbolic
+
+if [[ $sshKey == "" ]]
+then
+  echo "ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost mkdir -p $distPath"
+  echo "ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost mkdir -p $deployPath"
+  echo "scp -P $sshPort -o StrictHostKeychecking=no $deployFile $sshUser@$sshHost:$distPath"
+  echo "ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost cd $distPath; tar -xvzf $deployFile"
+  echo "ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost cd $distPath; rm -f $deployFile"
+  echo "ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost cd $distPath; mv elasticsearch-$version $deployPath"
+  echo "scp -P $sshPort -o StrictHostKeychecking=no start $sshUser@$sshHost:$deployPath/elasticsearch-$version/bin/"
+  echo "scp -P $sshPort -o StrictHostKeychecking=no stop $sshUser@$sshHost:$deployPath/elasticsearch-$version/bin/"
+  echo "ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost cd $deployPath/elasticsearch-$version/bin; chmod 755 start"
+  echo "ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost cd $deployPath/elasticsearch-$version/bin; chmod 755 stop"
+
+  ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "mkdir -p $distPath"
+  ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "mkdir -p $deployPath"
+  scp -P $sshPort -o StrictHostKeychecking=no $deployFile $sshUser@$sshHost:$distPath
+  ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; tar -xvzf $deployFile"
+  ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; rm -f $deployFile"
+  ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; mv elasticsearch-$version $deployPath"
+  scp -P $sshPort -o StrictHostKeychecking=no start $sshUser@$sshHost:$deployPath/elasticsearch-$version/bin/
+  scp -P $sshPort -o StrictHostKeychecking=no stop $sshUser@$sshHost:$deployPath/elasticsearch-$version/bin/
+  ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $deployPath/elasticsearch-$version/bin; chmod 755 start"
+  ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $deployPath/elasticsearch-$version/bin; chmod 755 stop"
+
+  if [[ $symbolic != "" ]]
+  then
+    echo "ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost cd $deployPath; rm -f $symbolic"
+    echo "ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost cd $deployPath; ln -s elasticsearch-$version $symbolic"
+    ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $deployPath; rm -f $symbolic"
+    ssh -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $deployPath; ln -s elasticsearch-$version $symbolic"
+  fi
+else
+  echo "ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost mkdir -p $distPath"
+  echo "ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost mkdir -p $deployPath"
+  echo "scp -i $sshKey -P $sshPort -o StrictHostKeychecking=no $deployFile $sshUser@$sshHost:$distPath"
+  echo "ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost cd $distPath; tar -xvzf $deployFile"
+  echo "ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost cd $distPath; rm -f $deployFile"
+  echo "ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost cd $distPath; mv elasticsearch-$version $deployPath"
+  echo "scp -i $sshKey -P $sshPort -o StrictHostKeychecking=no start $sshUser@$sshHost:$deployPath/elasticsearch-$version/bin/"
+  echo "scp -i $sshKey -P $sshPort -o StrictHostKeychecking=no stop $sshUser@$sshHost:$deployPath/elasticsearch-$version/bin/"
+  echo "ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost cd $deployPath/elasticsearch-$version/bin; chmod 755 start"
+  echo "ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost cd $deployPath/elasticsearch-$version/bin; chmod 755 stop"
+
+  ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "mkdir -p $distPath"
+  ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "mkdir -p $deployPath"
+  scp -i $sshKey -P $sshPort -o StrictHostKeychecking=no $deployFile $sshUser@$sshHost:$distPath
+  ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; tar -xvzf $deployFile"
+  ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; rm -f $deployFile"
+  ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $distPath; mv elasticsearch-$version $deployPath"
+  scp -i $sshKey -P $sshPort -o StrictHostKeychecking=no start $sshUser@$sshHost:$deployPath/elasticsearch-$version/bin/
+  scp -i $sshKey -P $sshPort -o StrictHostKeychecking=no stop $sshUser@$sshHost:$deployPath/elasticsearch-$version/bin/
+  ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $deployPath/elasticsearch-$version/bin; chmod 755 start"
+  ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $deployPath/elasticsearch-$version/bin; chmod 755 stop"
+
+  if [[ $symbolic != "" ]]
+  then
+    echo "ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost cd $deployPath; rm -f $symbolic"
+    echo "ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost cd $deployPath; ln -s elasticsearch-$version $symbolic"
+    ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $deployPath; rm -f $symbolic"
+    ssh -i $sshKey -p $sshPort -o StrictHostKeychecking=no $sshUser@$sshHost "cd $deployPath; ln -s elasticsearch-$version $symbolic"
+  fi
+fi
+
+echo "다운로드 받은 파일을 삭제 합니다."
+echo "rm -f $deployFile"
+rm -f $deployFile

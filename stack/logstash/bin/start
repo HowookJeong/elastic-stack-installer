@@ -1,0 +1,12 @@
+#!/bin/bash
+DIR_NAME=`dirname "$0"`
+DIR_HOME=`cd $DIR_NAME; cd ..; pwd`
+
+if [ -f "$DIR_HOME/PID" ]; then
+  echo "Running Process and Check your Logstash"
+fi
+
+$DIR_HOME/bin/logstash --verbose > /dev/null 2>&1 & PID=$!
+
+echo $PID
+echo $PID > $DIR_HOME/PID

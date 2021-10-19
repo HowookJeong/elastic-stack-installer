@@ -1,0 +1,12 @@
+#!/bin/bash
+DIR_NAME=`dirname "$0"`
+DIR_HOME=`cd $DIR_NAME; cd ..; pwd`
+
+if [ -f "$DIR_HOME/PID" ]; then
+  echo "Running Process and Check your Kibana"
+fi
+
+$DIR_HOME/node/bin/node --preserve-symlinks-main --preserve-symlinks $DIR_HOME/src/cli/dist > /dev/null 2>&1 & PID=$!
+
+echo $PID
+echo $PID > $DIR_HOME/PID

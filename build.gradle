@@ -1,0 +1,33 @@
+plugins {
+    id 'base'
+}
+
+def buildNumber = System.getenv('BUILD_NUMBER')
+version = "0.0.${buildNumber}"
+
+task copyStack {
+    doLast {
+        copy {
+            from 'stack'
+            into 'build/stack'
+            include '**/*'
+        }
+        println "copy config completed!!"
+    }
+}
+
+task packageDistribution(type: Zip)  {
+    delete 'build'
+    mkdir 'build'
+
+    dependsOn = ['copyStack']
+
+    archiveFileName = "${project.name}-${project.version}.zip"
+    destinationDirectory = file("build/dist")
+
+    from "build/stack"
+    println "package distribution completed!!"
+}
+
+// packaging
+// ./gradlew clean packageDistribution
